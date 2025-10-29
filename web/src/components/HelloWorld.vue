@@ -6,6 +6,11 @@ defineProps<{
 
 <template>
   <div class="greetings">
+    <a-button type="primary">Primary Button</a-button>
+    <a-button>Default Button</a-button>
+    <a-button type="dashed">Dashed Button</a-button>
+    <a-button type="text">Text Button</a-button>
+    <a-button type="link">Link Button</a-button>
     <h1 class="green">{{ msg }}</h1>
     <h3>
       You’ve successfully created a project with
