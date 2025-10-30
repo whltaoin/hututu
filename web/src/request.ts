@@ -1,11 +1,12 @@
 
 import axios from 'axios'
+import { message } from 'ant-design-vue'
 
 // Set config defaults when creating the instance
 
 
 const MyAxios = axios.create({
-  baseURL: 'https://some-domain.com/api/',
+  baseURL: 'http://localhost:9991/',
   timeout: 60000,
   withCredentials: true, //发送请去时，可以携带cookie
 });
@@ -30,6 +31,14 @@ axios.interceptors.response.use(function onFulfilled(response) {
   const {data} = response;
   // 未登录
   if (data.code === 40100) {
+    // 后续修改，逻辑：判断是不是登录请求，并且是不是页面，
+    if (
+     ! response.request.responseUrl.includes('/user/get/login') &&
+      !window.location.pathname.includes('/user/login')
+    ) {
+      message.warning("请登录");
+      window.location.href = '/login';
+    }
 
   }
   return response;
