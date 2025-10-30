@@ -1,7 +1,11 @@
 <!--默认前端模版-->
 
 <template>
+
+
   <div id="basic-page">
+
+    <a-config-provider :locale="locale === 'en' ? enUS : zhCN">
 
     <a-layout style="min-width: 100vh">
       <a-layout-header class="headerStyle">
@@ -12,11 +16,18 @@
         <router-view></router-view>
       </a-layout-content>
       <a-layout-footer class="footerStyle">
+        <div style="margin-bottom: 16px;text-align: right">
+          <a-radio-group v-model:value="locale">
+            <a-radio-button key="en" :value="enUS.locale">English</a-radio-button>
+            <a-radio-button key="cn" :value="zhCN.locale">中文</a-radio-button>
+          </a-radio-group>
+        </div>
         <a href="http:www.varin.cn" target="_blank">
           varin.cn By Varin
         </a>
       </a-layout-footer>
     </a-layout>
+      </a-config-provider>
 
   </div>
 </template>
@@ -25,6 +36,19 @@
 
 
 import GlobalHeader from '@/components/GlobalHeader.vue'
+import { ref, watch } from 'vue';
+import enUS from 'ant-design-vue/es/locale/en_US';
+import zhCN from 'ant-design-vue/es/locale/zh_CN';
+import dayjs from 'dayjs';
+import 'dayjs/locale/zh-cn';
+
+
+dayjs.locale('en');
+const locale = ref(enUS.locale);
+watch(locale, val => {
+  dayjs.locale(val);
+});
+
 </script>
 
 <style scoped>

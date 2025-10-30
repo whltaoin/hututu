@@ -5,6 +5,9 @@
     <h1>
       {{msg}}
     </h1>
+<!--    测试组件中英文切换-->
+        <a-date-picker />
+        <a-time-picker />
 
   </div>
 </template>

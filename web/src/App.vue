@@ -1,29 +1,18 @@
 <template>
-  <div id="app">
-        <basic-layout></basic-layout>
 
-  </div>
+
+    <basic-layout></basic-layout>
+
 
 </template>
-<script setup lang="ts">
+<script lang="ts" setup>
 
 import BasicLayout from '@/layouts/BasicLayout.vue'
-// 测试后端接口
-import {healthUsingGet} from "@/api/healthController"
-import { useLoginUserStore } from '@/store/userStore'
-healthUsingGet().then((res) => {
-  console.log(res)
-})
 
-// 测试pinia
+
+
 
 
 
 </script>
-<style scoped>
 
-
-#app{
-
-}
-</style>
