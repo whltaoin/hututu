@@ -1,17 +1,19 @@
-<!--默认前端模版-->
+
 
 <template>
   <div id="index-view">
-  <h1>首页</h1>
+    <h1>
+      {{msg}}
+    </h1>
+
   </div>
 </template>
-
 <script setup lang="ts">
 
-
+const msg = "弧图图 -- AI智能打造的智能图床"
 </script>
+<style>
 
-<style scoped>
 #index-view {
 
 }

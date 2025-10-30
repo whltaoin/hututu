@@ -18,9 +18,17 @@
         />
 
       </a-col>
-      <a-col flex="100px">
+      <a-col flex="200px">
         <div class="user-login-status">
-          <a-button type="primary"  href="/user/login">登录</a-button>
+
+          <div v-if="loginUserStore.loginUser.id">
+            {{loginUserStore.loginUser.userName?? "无名"}}
+          </div>
+          <div v-else>
+
+            <a-button type="primary"  href="/user/login">登录</a-button>
+
+          </div>
 
         </div>
       </a-col>
@@ -34,8 +42,13 @@
 <script lang="ts" setup>
 import { h, ref } from 'vue'
 import { MenuProps } from 'ant-design-vue'
-
 import {  TagOutlined  } from '@ant-design/icons-vue';
+
+
+const loginUserStore = useLoginUserStore()
+loginUserStore.getLoginUser()
+
+
 
 const current = ref<string[]>(['mail'])
 const items = ref<MenuProps['items']>([
@@ -58,6 +71,7 @@ const items = ref<MenuProps['items']>([
 ])
 
 import {useRouter} from 'vue-router';
+import { useLoginUserStore } from '@/store/userStore'
 const router = useRouter();
 // 路由跳转事件
 
