@@ -12,6 +12,10 @@
   </div>
 </template>
 <script setup lang="ts">
+import { healthUsingGet } from "@/api/healthController";
+healthUsingGet().then((res)=>{
+  console.log(res);
+})
 
 const msg = "弧图图 -- AI智能打造的智能图床"
 </script>
