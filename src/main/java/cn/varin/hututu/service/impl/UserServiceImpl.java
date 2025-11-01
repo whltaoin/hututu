@@ -8,11 +8,14 @@ import cn.varin.hututu.exception.CustomizeException;
 import cn.varin.hututu.exception.ResponseCode;
 import cn.varin.hututu.exception.ThrowUtil;
 import cn.varin.hututu.model.dto.user.UserLoginRequest;
+import cn.varin.hututu.model.dto.user.UserQueryRequest;
 import cn.varin.hututu.model.dto.user.UserRegisterRequest;
 import cn.varin.hututu.model.enums.UserRoleEnum;
 import cn.varin.hututu.model.vo.user.LoginUserVo;
+import cn.varin.hututu.model.vo.user.UserVo;
 import cn.varin.hututu.util.EncryptionUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -24,6 +27,10 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
 * @author varya
@@ -94,7 +101,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         LoginUserVo loginUserVo = this.getLoginUserVO(user);
 
         // 将用户存储到cookit中
-        request.setAttribute(UserConstant.USER_LOGIN_STATUS,user);
+        request.getSession().setAttribute(UserConstant.USER_LOGIN_STATUS,user);
+
+        System.out.println(request.getAttribute(UserConstant.USER_LOGIN_STATUS));
 
 
         return  loginUserVo;
@@ -111,8 +120,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
+    public UserVo getUserVo(User user) {
+        ThrowUtil.throwIf(ObjectUtil.isEmpty(user),ResponseCode.OPERATION_ERROR);
+        UserVo userInfo = new UserVo();
+        BeanUtils.copyProperties(user,userInfo);
+        return userInfo;
+    }
+
+    @Override
+    public List<UserVo> getListUserVO(List<User> userList) {
+
+        ThrowUtil.throwIf(ObjectUtil.isEmpty(userList) || userList.size()==0,ResponseCode.OPERATION_ERROR);
+        return userList.stream().map(this::getUserVo).collect(Collectors.toList());
+    }
+
+    @Override
     public User getLoginUser(HttpServletRequest httpServletRequest) {
-        Object userObject = httpServletRequest.getAttribute(UserConstant.USER_LOGIN_STATUS);
+        Object userObject = httpServletRequest.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
         User user = (User) userObject;;
         ThrowUtil.throwIf(ObjectUtil.isEmpty(userObject)|| ObjectUtil.isEmpty(user.getId()),
                 new CustomizeException(ResponseCode.OPERATION_ERROR));
@@ -122,10 +146,50 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         User currentUser = this.getById(id);
         ThrowUtil.throwIf(ObjectUtil.isEmpty(currentUser),ResponseCode.OPERATION_ERROR);
 
-        LoginUserVo loginUserVO = this.getLoginUserVO(user);
 
 
         return currentUser;
+    }
+
+    /**
+     * 用户注销
+     * @param httpServletRequest
+     * @return
+     */
+    @Override
+    public Boolean userLogout(HttpServletRequest httpServletRequest) {
+        //判断请求中是否存在用户信息
+        Object attribute = httpServletRequest.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
+        ThrowUtil.throwIf(ObjectUtil.isEmpty(attribute),ResponseCode.OPERATION_ERROR.getCode(),"未登录");
+        // 注销
+        httpServletRequest.getSession().removeAttribute(UserConstant.USER_LOGIN_STATUS);
+        return true;
+    }
+
+    @Override
+    public QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest) {
+        ThrowUtil.throwIf(ObjectUtil.isEmpty(userQueryRequest),ResponseCode.OPERATION_ERROR.getCode(),"参数为空");
+        Long id = userQueryRequest.getId();
+        String userAccount = userQueryRequest.getUserAccount();
+        String userName = userQueryRequest.getUserName();
+        String userProfile = userQueryRequest.getUserProfile();
+        String userRole = userQueryRequest.getUserRole();
+        String sortOrder = userQueryRequest.getSortOrder();
+        String sortField = userQueryRequest.getSortField();
+
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+
+        queryWrapper.eq(ObjectUtil.isNotNull( id) && id>1,"id",id)
+                .eq(StrUtil.isNotBlank( userRole),"userRole",userRole)
+                .like(StrUtil.isNotBlank( userName),"userName",userName)
+                .like(StrUtil.isNotBlank( userAccount),"userAccount",userAccount)
+                .like(StrUtil.isNotBlank( userProfile),"userProfile",userProfile)
+                .orderBy(StrUtil.isNotEmpty(sortField),sortOrder.equals("ascend"),sortField);
+
+
+
+
+        return queryWrapper;
     }
 
 }

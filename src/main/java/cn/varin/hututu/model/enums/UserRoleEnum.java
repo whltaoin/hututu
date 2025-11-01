@@ -1,5 +1,7 @@
 package cn.varin.hututu.model.enums;
 
+import cn.varin.hututu.exception.ThrowUtil;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import lombok.Getter;
 
 /**
@@ -17,5 +19,23 @@ public enum UserRoleEnum {
      UserRoleEnum(String key,String value){
         this.key = key;
         this.value = value;
+    }
+
+    /**
+     * 通过value查询到当前的枚举
+     * @param value
+     * @return
+     */
+    public static UserRoleEnum getUserRoleEnum(String value){
+        if (StringUtils.isEmpty(value)) {
+
+            return null;
+        }
+        for( UserRoleEnum userRoleEnum : UserRoleEnum.values()){
+            if(userRoleEnum.getValue().equals(value)){
+                return userRoleEnum;
+            }
+        }
+        return null;
     }
 }
