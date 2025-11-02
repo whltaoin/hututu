@@ -137,7 +137,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public User getLoginUser(HttpServletRequest httpServletRequest) {
         Object userObject = httpServletRequest.getSession().getAttribute(UserConstant.USER_LOGIN_STATUS);
-        User user = (User) userObject;;
+        User user = (User) userObject;
         ThrowUtil.throwIf(ObjectUtil.isEmpty(userObject)|| ObjectUtil.isEmpty(user.getId()),
                 new CustomizeException(ResponseCode.OPERATION_ERROR));
 

@@ -15,10 +15,27 @@ const router = createRouter({
     {
       path: '/about',
       name: '关于',
-      // route level code-splitting
-      // this generates a separate chunk (About.[hash].js) for this route
-      // which is lazy-loaded when the route is visited.
+
       component: () => import('../views/AboutView.vue'),
+    },
+    {
+      path: '/user/login',
+      name: '用户登录',
+
+      component: () => import('../page/user/UserLoginPage.vue'),
+    }
+    ,
+    {
+      path: '/user/register',
+      name: '用户注册',
+
+      component: () => import('../page/user/UserRegisterPage.vue'),
+    }
+    , {
+      path: '/admin/manage',
+      name: '用户管理',
+
+      component: () => import('../page/admin/UserManagePage.vue'),
     }
   ],
 })
