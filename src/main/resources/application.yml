@@ -7,6 +7,10 @@ spring:
     name: hututu-intelligentImageBed
   profiles:
     active: local
+  servlet:
+    multipart:
+      location: /users/varya/nacos
+
 
 knife4j:
   enable: true
