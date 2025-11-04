@@ -2,6 +2,7 @@ package cn.varin.hututu.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 
+import java.io.Serializable;
 import java.util.Date;
 import lombok.Data;
 
@@ -11,7 +12,9 @@ import lombok.Data;
  */
 @TableName(value ="picture")
 @Data
-public class Picture {
+public class Picture  implements Serializable {
+    @TableField(exist = false) // 表示该字段在数据库中不存在
+    private static final long serialVersionUID = 1L;
     /**
      * id
      */
