@@ -24,7 +24,7 @@ public class PictureQueryRequest extends PageRequest implements Serializable {
     private String category;  
   
       
-    private List<String> tags;
+    private String[] tags;
   
       
     private Long picSize;  

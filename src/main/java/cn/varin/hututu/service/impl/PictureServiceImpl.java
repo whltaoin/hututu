@@ -101,7 +101,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         String name = pictureQueryRequest.getName();
         String introduction = pictureQueryRequest.getIntroduction();
         String category = pictureQueryRequest.getCategory();
-        List<String> tags = pictureQueryRequest.getTags();
+        String[] tags = pictureQueryRequest.getTags();
         Long picSize = pictureQueryRequest.getPicSize();
         Integer picWidth = pictureQueryRequest.getPicWidth();
         Integer picHeight = pictureQueryRequest.getPicHeight();
@@ -133,11 +133,12 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         .eq(ObjUtil.isNotEmpty(picScale), "picScale", picScale);
 
 
-        if (CollUtil.isNotEmpty(tags)) {
+        if (tags != null && tags.length > 0) {
+            for (String tag : tags) {
+                queryWrapper.like("tags",tag);
+            }
 
-            tags.forEach(tag -> {
-                queryWrapper.like("tags","/"+tag+"/");
-            });
+
         }
         // 排序
         queryWrapper.orderBy(StrUtil.isNotEmpty(sortField), sortOrder.equals("ascend"), sortField);
@@ -190,6 +191,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             pictureVo.setUser(userVo);
 
         });
+        pictureVoPage.setRecords(pictureVoList);
 
 
         return pictureVoPage;

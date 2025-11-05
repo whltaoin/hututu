@@ -63,12 +63,14 @@ watch(locale, val => {
   background-color: white;
 }
 #basic-page .contentStyle{
-  margin-bottom: 40px;
+  margin-bottom: 60px;
   padding:20px;
+  min-height: 600px;
+  background-color: white;
 }
 
 #basic-page .footerStyle{
-  padding:16px;
+  padding:8px;
   background-color: #efefef;
   position: fixed;
   bottom: 0;

@@ -66,6 +66,16 @@ const originItems = ([
     label: '用户管理',
   },
   {
+    key: '/add_picture',
+    title: '创建图片',
+    label: '创建图片',
+  },
+  {
+    key: '/admin/pictureManage',
+    title: '图片管理',
+    label: '图片管理',
+  },
+  {
     key: 'others',
     title: 'BLOG',
     icon: () => h(TagOutlined),
