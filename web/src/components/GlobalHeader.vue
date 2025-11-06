@@ -123,7 +123,7 @@ const doLoginOut = async () => {
 
 const items = computed<MenuProps['items']>(() =>{
   return originItems?.filter((item) => {
-    if (item.key.startsWith('/admin')) {
+    if (item.key.startsWith('/admin') ) {
       const loginUser = userLoginUser.loginUser
       if (!loginUser || loginUser.userRole !== 'admin') {
         return false

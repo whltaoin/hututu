@@ -1,18 +1,99 @@
 <!--默认前端模版-->
 
 <template>
-  <div id="picture-detail-page"></div>
+  <div id="picture-detail-page">
+    <a-row :gutter="[16, 16]">
+      <!-- 图片展示区 -->
+      <a-col :sm="24" :md="16" :xl="18">
+        <a-card title="图片预览">
+          <a-image :src="picture.url" />
+        </a-card>
+      </a-col>
+      <!-- 图片信息区 -->
+      <a-col :sm="24" :md="8" :xl="6">
+        <a-card title="图片信息">
+          <a-descriptions :column="1">
+            <a-descriptions-item label="作者">
+              <a-space>
+                <a-avatar :size="24" :src="picture.user?.userAvatar" />
+                <div>{{ picture.user?.userName }}</div>
+              </a-space>
+            </a-descriptions-item>
+            <a-descriptions-item label="名称">
+              {{ picture.name ?? '未命名' }}
+            </a-descriptions-item>
+            <a-descriptions-item label="简介">
+              {{ picture.introduction ?? '-' }}
+            </a-descriptions-item>
+            <a-descriptions-item label="分类">
+              {{ picture.category ?? '默认' }}
+            </a-descriptions-item>
+            <a-descriptions-item label="标签">
+              <a-tag v-for="tag in picture.tags" :key="tag">
+                {{ tag }}
+              </a-tag>
+            </a-descriptions-item>
+            <a-descriptions-item label="格式">
+              {{ picture.picFormat ?? '-' }}
+            </a-descriptions-item>
+            <a-descriptions-item label="宽度">
+              {{ picture.picWidth ?? '-' }}
+            </a-descriptions-item>
+            <a-descriptions-item label="高度">
+              {{ picture.picHeight ?? '-' }}
+            </a-descriptions-item>
+            <a-descriptions-item label="宽高比">
+              {{ picture.picScale ?? '-' }}
+            </a-descriptions-item>
+            <a-descriptions-item label="大小">
+              {{ formatSize(picture.picSize) }}
+            </a-descriptions-item>
+          </a-descriptions>
+        </a-card>
+
+        <div style="margin: 10px 0px">
+          <a-space wrap>
+            <a-button v-if="canEdit" type="default" @click="doEdit">
+              编辑
+              <template #icon>
+                <EditOutlined />
+              </template>
+            </a-button>
+
+
+            <a-popconfirm title="确认删除图片？" @confirm="doDelete" >
+
+              <a-button v-if="canEdit" danger >
+                删除
+                <template #icon>
+                  <DeleteOutlined />
+                </template>
+              </a-button>
+
+            </a-popconfirm>
+            <a-button type="primary" @click="doDownload">
+              免费下载
+              <template #icon>
+                <DownloadOutlined />
+              </template>
+            </a-button>
+          </a-space>
+        </div>
+      </a-col>
+    </a-row>
+  </div>
 </template>
 
 <script setup lang="ts">
-
-import { getPictureVoByIdUsingGet } from '@/api/PictureController'
-import { onMounted, ref } from 'vue'
+import { deleteUsingDelete, getPictureVoByIdUsingGet } from '@/api/PictureController'
+import { downloadImage, formatSize } from '@/util/index'
+import { computed, onMounted, ref } from 'vue'
 import { message } from 'ant-design-vue'
+import { useLoginUserStore } from '@/store/userStore'
+import { useRouter } from 'vue-router'
 
-const props =defineProps<{id:String | number}>()
+const props = defineProps<{ id: String | number }>()
 const picture = ref<API.PictureVO>({})
-
 
 const fetchPictureDetail = async () => {
   try {
@@ -21,7 +102,6 @@ const fetchPictureDetail = async () => {
     })
     if (res.data.code === 200 && res.data.data) {
       picture.value = res.data.data
-      console.log(picture.value)
     } else {
       message.error('获取图片详情失败，' + res.data.message)
     }
@@ -30,9 +110,60 @@ const fetchPictureDetail = async () => {
   }
 }
 
+const loginUserStore = useLoginUserStore()
+//判断是否有修改权限
+const canEdit = computed(() => {
+  const loginUser = loginUserStore.loginUser
+
+  if (!loginUser.id) {
+    return false
+  }
+
+  const user = picture.value.user || {}
+  return loginUser.id === user.id || loginUser.userRole === 'admin'
+})
+
+const router = useRouter()
+const doEdit = () => {
+  //:href="`/add_picture?id=${record.id}`
+  router.push('/add_picture?id=' + picture.value.id)
+}
+
+const deleteRequest = ref<API.DeleteRequest>({})
+
+const doDelete = async () => {
+  const id = picture.value.id
+  if (!id) {
+    return
+  }
+  deleteRequest.value.id = id
+
+  const res = await deleteUsingDelete(deleteRequest.value)
+
+  if (res.data.code === 200) {
+    message.success('删除成功')
+    router.push('/')
+  } else {
+    message.error('删除失败')
+  }
+}
+// 下载
+const doDownload = () => {
+  downloadImage(picture.value.url)
+}
 onMounted(() => {
   fetchPictureDetail()
 })
+
+const confirm = (e: MouseEvent) => {
+  return new Promise(resolve => {
+
+  });
+};
+
+const cancel = (e: MouseEvent) => {
+
+};
 </script>
 
 <style scoped>

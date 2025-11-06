@@ -73,6 +73,7 @@ import {
 } from '@/api/PictureController'
 import { message } from 'ant-design-vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useLoginUserStore } from '@/store/userStore'
 
 const dataList = ref([])
 const total = ref(0)
@@ -156,7 +157,15 @@ const getTagCategoryOptions = async () => {
 }
 // 跳转详情页
 const router = useRouter()
+
 const doClickPicture = (picture: any) => {
+  const userStore = useLoginUserStore()
+  var loginUser = userStore.loginUser
+  console.log(loginUser)
+  if(!loginUser.id){
+    router.push('/user/login')
+    return
+  }
   router.push({
     path: `/picture/${picture.id}`,
   })

@@ -59,6 +59,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { message } from 'ant-design-vue'
 import { editPictureUsingPost, getPictureByIdUsingGet, listPictureTagCategoryUsingGet } from '@/api/PictureController'
 import { useRouter,useRoute } from 'vue-router'
+import { useLoginUserStore } from '@/store/userStore'
 
 const picture = ref<API.Picture>()
 const onSuccess = (newPicture: API.PictureVo): void => {
@@ -138,6 +139,16 @@ const getOldPicture = async () => {
 
 
 }
+onMounted(() => {
+  const userStore = useLoginUserStore()
+  var loginUser = userStore.loginUser
+  console.log(loginUser)
+  if(!loginUser.id){
+    router.push('/user/login')
+    return
+  }
+})
+
 
 </script>
 
