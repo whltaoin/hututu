@@ -1,8 +1,10 @@
 package cn.varin.hututu.service.impl;
 
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.varin.hututu.constant.UserConstant;
 import cn.varin.hututu.exception.CustomizeException;
@@ -12,10 +14,7 @@ import cn.varin.hututu.manager.FileManager;
 import cn.varin.hututu.manager.upload.FilePictureUpload;
 import cn.varin.hututu.manager.upload.PictureUploadTemplate;
 import cn.varin.hututu.manager.upload.UrlPictureUpload;
-import cn.varin.hututu.model.dto.picture.PictureEditRequest;
-import cn.varin.hututu.model.dto.picture.PictureQueryRequest;
-import cn.varin.hututu.model.dto.picture.PictureReviewRequest;
-import cn.varin.hututu.model.dto.picture.PictureUploadRequest;
+import cn.varin.hututu.model.dto.picture.*;
 import cn.varin.hututu.model.dto.file.UploadPictureResult;
 import cn.varin.hututu.model.entity.User;
 import cn.varin.hututu.model.enums.ReviewStatusEnum;
@@ -29,6 +28,11 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import cn.varin.hututu.model.entity.Picture;
 import cn.varin.hututu.service.PictureService;
 import cn.varin.hututu.mapper.PictureMapper;
+import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,10 +41,8 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.swing.undo.CannotUndoException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.IOException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -48,6 +50,7 @@ import java.util.stream.Collectors;
 * @description 针对表【picture(图片)】的数据库操作Service实现
 * @createDate 2025-11-03 19:07:37
 */
+@Slf4j
 @Service
 public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     implements PictureService{
@@ -105,8 +108,16 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         // 3. 数据复制
         Picture picture = new Picture();
         BeanUtils.copyProperties(uploadPictureResult, picture);
-        picture.setName(uploadPictureResult.getPicName());
         picture.setUserId(loginUser.getId());
+
+        // 批量生成前缀名称补充
+        String picName =  uploadPictureResult.getPicName();
+        if(pictureUploadRequest!=null && StringUtils.isNotBlank(pictureUploadRequest.getPicName())) {
+            picName=pictureUploadRequest.getPicName();
+
+        }
+        picture.setName( picName);
+
        // 管理员自动审核
         this.fillterReviewPictureParams(picture, loginUser);
 
@@ -309,6 +320,83 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
             picture.setReviewStatus(ReviewStatusEnum.REVIEWING.getValue());
         }
 
+    }
+
+    /**
+     * https://cn.bing.com/images/search?q=%E7%8C%AB&first=1
+     * @param pictureUploadByBatchRequest
+     * @param loginUser
+     * @return
+     */
+
+    @Override
+    public Integer pictureUploadByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest, User loginUser) {
+
+        String searchText = pictureUploadByBatchRequest.getSearchText();
+        Integer count = pictureUploadByBatchRequest.getCount();
+        ThrowUtil.throwIf(count>=30, ResponseCode.PARAMS_ERROR.getCode(),"一次最多生成30张图片");
+        String nameFrefix = pictureUploadByBatchRequest.getNameFrefix();
+        if (StrUtil.isBlank(nameFrefix)) {
+            nameFrefix = searchText;
+        }
+        String pageNumber = String.valueOf(new Random().nextInt(10000)+1);
+
+       //  String basicUrl  = String.format("https://cn.bing.com/images/search?q=%s&first=%s",searchText, pageNumber);
+        String basicUrl = String.format("https://cn.bing.com/images/async?q=%s&mmasync=1", searchText);
+        Document document= null;
+        try {
+        document  = Jsoup.connect(basicUrl).get();
+
+        } catch (IOException e) {
+            log.error("获取网页失败：{}",e.getMessage());
+            throw new RuntimeException(e);
+        }
+        Integer imageCount = 0;
+
+        Elements imageList = document.getElementsByClass("dgControl").first().select("img.mimg");
+
+        for(Element image : imageList) {
+            String src = image.attr("src");
+            if (StrUtil.isBlank(src)) {
+
+                src = image.attr("data-src");
+                if (StrUtil.isBlank(src)) {
+                    log.info("当前链接为空，已跳过: {}", src);
+                    continue;
+                }
+
+
+            }
+       //      有链接，截取？号后的所有数据
+            int i = src.indexOf("?");
+            if (i > -1) {
+                src = src.substring(0, i);
+            }
+
+            log.info("图片url：{}",src);
+
+            // 上传
+            PictureUploadRequest pictureUploadRequest = new PictureUploadRequest();
+            if(StringUtils.isNotBlank(nameFrefix)){
+                pictureUploadRequest.setPicName(nameFrefix + (imageCount + 1));
+            }
+
+            try {
+                PictureVo pictureVo = this.uploadPictureSaveOrUpdate(src, pictureUploadRequest, loginUser);
+                log.info("图片上传成功, id = {}", pictureVo.getId());
+                imageCount++;
+            }catch (Exception e){
+                log.error("图片上传失败", e);
+                continue;
+            }
+                if (imageCount >= count) {
+                    break;
+
+                }
+
+        }
+
+        return imageCount;
     }
 }
 

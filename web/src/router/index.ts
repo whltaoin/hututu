@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import PictureDetailPage from '@/page/picture/PictureDetailPage.vue'
+import AddPictureBatchPage from '@/page/picture/AddPictureBatchPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -56,6 +57,11 @@ const router = createRouter({
       props: true,
       component: PictureDetailPage
 
+    },
+    {
+      path: '/add_picture/batch',
+      name: '批量创建图片',
+      component: AddPictureBatchPage,
     }
   ],
 })

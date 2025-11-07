@@ -1,5 +1,12 @@
 <template>
   <div id="picture-manage">
+
+    <div style="text-align:right;margin-bottom: 20px">
+      <a-space>
+        <a-button type="primary" href="/add_picture" target="_blank">+ 创建图片</a-button>
+        <a-button type="primary" href="/add_picture/batch" target="_blank" ghost>+ 批量创建图片</a-button>
+      </a-space>
+    </div>
     <a-flex justify="space-between">
       <h2>图片管理</h2>
       <a-button type="primary" href="/add_picture" target="_blank">+ 创建图片</a-button>

@@ -2,6 +2,7 @@ package cn.varin.hututu.service;
 
 import cn.varin.hututu.model.dto.picture.PictureQueryRequest;
 import cn.varin.hututu.model.dto.picture.PictureReviewRequest;
+import cn.varin.hututu.model.dto.picture.PictureUploadByBatchRequest;
 import cn.varin.hututu.model.dto.picture.PictureUploadRequest;
 import cn.varin.hututu.model.entity.Picture;
 import cn.varin.hututu.model.entity.User;
@@ -73,6 +74,15 @@ public interface PictureService extends IService<Picture> {
      */
 
     void fillterReviewPictureParams(Picture picture,User loginUser);
+
+    /**
+     * 批量上传图片
+     * @param pictureUploadByBatchRequest
+     * @param loginUser
+     * @return
+     */
+
+    Integer pictureUploadByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest,User loginUser);
 
 
 

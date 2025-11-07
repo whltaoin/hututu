@@ -260,5 +260,20 @@ public class PictureController {
 
     }
 
+    /**
+     * 批量生成
+     * @param pictureUploadByBatchRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("/upload/batch")
+    public  BaseResponse<Integer> pictureUploadByBatch(@RequestBody PictureUploadByBatchRequest pictureUploadByBatchRequest, HttpServletRequest request) {
+        ThrowUtil.throwIf(pictureUploadByBatchRequest == null, ResponseCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        int uploadCount = pictureService.pictureUploadByBatch(pictureUploadByBatchRequest, loginUser);
+        return ResponseUtil.success(uploadCount);
+    }
+
+
 
 }
