@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 @Slf4j
-@Api(tags = "文件服务测试接口")
+// @Api(tags = "文件服务测试接口")
 @RestController
 @RequestMapping("/file")
 public class FileController {

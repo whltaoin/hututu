@@ -1,6 +1,7 @@
 package cn.varin.hututu.service;
 
 import cn.varin.hututu.model.dto.picture.PictureQueryRequest;
+import cn.varin.hututu.model.dto.picture.PictureReviewRequest;
 import cn.varin.hututu.model.dto.picture.PictureUploadRequest;
 import cn.varin.hututu.model.entity.Picture;
 import cn.varin.hututu.model.entity.User;
@@ -20,12 +21,12 @@ import javax.servlet.http.HttpServletRequest;
 public interface PictureService extends IService<Picture> {
     /**
      * 图片信息创建上传或更新
-     * @param multipartFile 文件
+     * @param object 可能是文件也有可能是字符串
      * @param pictureUploadRequest 图片请求类
      * @param loginUser 上传文件的用户
      * @return 图片VO
      */
-     PictureVo uploadPictureSaveOrUpdate(MultipartFile multipartFile, PictureUploadRequest pictureUploadRequest, User loginUser) ;
+     PictureVo uploadPictureSaveOrUpdate(Object object, PictureUploadRequest pictureUploadRequest, User loginUser) ;
 
 
 
@@ -58,4 +59,22 @@ public interface PictureService extends IService<Picture> {
      */
     public void validPicture(Picture picture) ;
 
-    }
+    /**
+     * 图片审核
+     * @param pictureReviewRequest 审核状态请求包装类
+     * @param LoginUser 审核用户
+     * @return true为完成审核流程，
+     */
+    Boolean doPictureReview(PictureReviewRequest pictureReviewRequest,User LoginUser);
+    /**
+     * 判断是否是管理员，如果是管理员就自动过审
+     * @param picture 需要审核的图片
+     * @param loginUser 审核人
+     */
+
+    void fillterReviewPictureParams(Picture picture,User loginUser);
+
+
+
+}
+

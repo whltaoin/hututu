@@ -5,7 +5,6 @@
       <a-button type="primary" href="/add_picture" target="_blank">+ 创建图片</a-button>
     </a-flex>
 
-
     <!--   搜索-->
     <a-form layout="inline" :model="searchParams" @finish="doSearch">
       <a-form-item label="关键词" name="searchText">
@@ -15,6 +14,8 @@
           allow-clear
         />
       </a-form-item>
+
+
       <a-form-item label="类型" name="category">
         <a-input v-model:value="searchParams.category" placeholder="请输入类型" allow-clear />
       </a-form-item>
@@ -23,30 +24,36 @@
           v-model:value="searchParams.tags"
           mode="tags"
           placeholder="请输入标签"
- style="width: 100px"
+          style="width: 100px"
+          allow-clear
+        />
+      </a-form-item>
+
+      <a-form-item label="审核状态" name="reviewStatus">
+        <a-select
+          style="min-width: 180px"
+          v-model:value="searchParams.reviewStatus"
+          :options="PIC_REVIEW_STATUS_OPTIONS"
+          placeholder="请输入审核状态"
           allow-clear
         />
       </a-form-item>
       <a-form-item>
         <a-button type="primary" html-type="submit">搜索</a-button>
-
       </a-form-item>
       <a-form-item>
-        <a-button
-          @click="doReSearch"
-          type="dashed" block
-        >
-          重置
-        </a-button>
+        <a-button @click="doReSearch" type="dashed" block> 重置 </a-button>
       </a-form-item>
     </a-form>
     <!--    表格-->
-    <a-table :columns="columns" :data-source="dataList"
-             :pagination="pagination"
-             @change="doTableChange"
+    <a-table
+      :columns="columns"
+      :data-source="dataList"
+      :pagination="pagination"
+      @change="doTableChange"
     >
       <template #bodyCell="{ column, record }">
-        <template v-if="column.dataIndex === 'url'" >
+        <template v-if="column.dataIndex === 'url'">
           <a-image :src="record.url" :width="120" />
         </template>
         <!-- 标签 -->
@@ -69,14 +76,37 @@
         <template v-else-if="column.dataIndex === 'editTime'">
           {{ dayjs(record.editTime).format('YYYY-MM-DD HH:mm:ss') }}
         </template>
+
+        <!-- 审核信息 -->
+        <template v-if="column.dataIndex === 'reviewMessage'">
+          <div>审核状态：{{ PIC_REVIEW_STATUS_MAP[record.reviewStatus] }}</div>
+          <div>审核信息：{{ record.reviewMessage }}</div>
+          <div>审核人：{{ record.reviewerId }}</div>
+        </template>
+
         <template v-else-if="column.key === 'action'">
-          <a-space>
-            <a-button type="link" :href="`/add_picture?id=${record.id}`" target="_blank">编辑</a-button>
-            <a-button type="link" danger @click="doDelete(record.id)">删除</a-button>
-          </a-space>
+          <a-button type="link" :href="`/add_picture?id=${record.id}`" target="_blank"
+            >编辑</a-button
+          >
+          <a-button type="link" danger @click="doDelete(record.id)">删除</a-button>
+
+          <a-button
+            v-if="record.reviewStatus !== PIC_REVIEW_STATUS_ENUM.PASS"
+            type="link"
+            @click="handleReview(record, PIC_REVIEW_STATUS_ENUM.PASS)"
+          >
+            通过
+          </a-button>
+          <a-button
+            v-if="record.reviewStatus !== PIC_REVIEW_STATUS_ENUM.REJECT"
+            type="link"
+            danger
+            @click="handleReview(record, PIC_REVIEW_STATUS_ENUM.REJECT)"
+          >
+            拒绝
+          </a-button>
         </template>
       </template>
-
     </a-table>
   </div>
 </template>
@@ -85,8 +115,13 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { deleteUserByIdUsingDelete } from '@/api/UserController'
 import { message } from 'ant-design-vue'
 import dayjs from 'dayjs'
-import { listPictureByPageUsingPost } from '@/api/PictureController'
+import { doPictureReviewUsingPost, listPictureByPageUsingPost } from '@/api/PictureController'
 import PictureQueryRequest = API.PictureQueryRequest
+import {
+  PIC_REVIEW_STATUS_ENUM,
+  PIC_REVIEW_STATUS_MAP,
+  PIC_REVIEW_STATUS_OPTIONS,
+} from '@/constant/picture'
 const total = ref(0)
 
 const searchParams = reactive<PictureQueryRequest>({
@@ -94,10 +129,9 @@ const searchParams = reactive<PictureQueryRequest>({
   pageSize: 10,
   sortField: 'createTime',
   sortOrder: 'descend',
-  searchText:"",
-  category:"",
-  tags:[]
-
+  searchText: '',
+  category: '',
+  tags: [],
 })
 const dataList = ref([])
 
@@ -109,12 +143,11 @@ const fetchData = async () => {
     dataList.value = res.data.data.records ?? []
     total.value = res.data.data.total ?? 0
     console.log(dataList.value)
-    console.log( total.value )
+    console.log(total.value)
   } else {
     message.error('获取数据失败，' + res.data.message)
   }
 }
-
 
 // 页面加载时执行一次
 onMounted(() => {
@@ -166,6 +199,10 @@ const columns = [
     dataIndex: 'editTime',
   },
   {
+    title: '审核信息',
+    dataIndex: 'reviewMessage',
+  },
+  {
     title: '操作',
     key: 'action',
   },
@@ -176,7 +213,7 @@ const pagination = computed(() => {
   return {
     current: searchParams.current ?? 1,
     pageSize: searchParams.pageSize ?? 10,
-    total:total.value,
+    total: total.value,
     showSizeChanger: true,
     showTotal: (total) => `共 ${total} 条`,
   }
@@ -188,35 +225,51 @@ const doTableChange = (page: any) => {
   fetchData()
 }
 
-
 // 搜索框搜索
 
 const doSearch = () => {
-  searchParams.current=1
+  searchParams.current = 1
   fetchData()
-
 }
 
 // 重置按钮
 const doReSearch = () => {
-  searchParams.current=1;
-  searchParams.category=""
+  searchParams.current = 1
+  searchParams.category = ''
 
-  searchParams.pageSize=10
-  searchParams.searchText=""
-  searchParams.tags=[]
+  searchParams.pageSize = 10
+  searchParams.searchText = ''
+  searchParams.tags = []
+  searchParams.reviewStatus=null
   fetchData()
 }
 
 // 删除按钮
-const doDelete = async (id:string) => {
-
-  const res = await    deleteUserByIdUsingDelete({id})
+const doDelete = async (id: string) => {
+  const res = await deleteUserByIdUsingDelete({ id })
   if (res.data.code === 200 || res.data.data) {
     message.success('删除成功')
     fetchData()
-  }else{
-    message.error("数据删除失败："+res.data.message)
+  } else {
+    message.error('数据删除失败：' + res.data.message)
+  }
+}
+
+// 审核
+const handleReview = async (record: API.Picture, reviewStatus: number) => {
+  const reviewMessage =
+    reviewStatus === PIC_REVIEW_STATUS_ENUM.PASS ? '管理员操作通过' : '管理员操作拒绝'
+  const res = await doPictureReviewUsingPost({
+    id: record.id,
+    reviewStatus,
+    reviewMessage,
+  })
+  if (res.data.code === 200) {
+    message.success('审核操作成功')
+
+    fetchData()
+  } else {
+    message.error('审核操作失败，' + res.data.message)
   }
 }
 </script>

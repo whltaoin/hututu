@@ -1,6 +1,7 @@
 <!--图片上传组件-->
 <template>
   <div id="picture-upload">
+
     <a-upload
       list-type="picture-card"
       :show-upload-list="false"

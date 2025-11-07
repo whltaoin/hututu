@@ -22,7 +22,7 @@ router.beforeEach(async (to, from, next) => {
   if(toUrl.startsWith('/admin')){
     // 判断如果用户为空或者用户权限不是admin弹出
     if(!loginUser || loginUser.userRole !== 'admin'){
-      message.error("您没有管理元权限")
+      message.error("您没有管理员权限")
       next(`/user/login?redirect=${toUrl}`)
       return
     }

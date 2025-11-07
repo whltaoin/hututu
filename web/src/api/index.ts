@@ -2,13 +2,13 @@
 /* eslint-disable */
 // API 更新时间：
 // API 唯一标识：
-import * as wenjianfuwuceshijiekou from './wenjianfuwuceshijiekou'
+import * as fileController from './fileController'
 import * as healthController from './healthController'
-import * as tupianmokuaijiekou from './tupianmokuaijiekou'
-import * as yonghumokuai from './yonghumokuai'
+import * as pictureController from './pictureController'
+import * as userController from './userController'
 export default {
-  wenjianfuwuceshijiekou,
+  fileController,
   healthController,
-  tupianmokuaijiekou,
-  yonghumokuai,
+  pictureController,
+  userController,
 }

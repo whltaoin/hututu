@@ -30,7 +30,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
-@Api(tags = "用户模块")
+// @Api(tags = "用户模块")
 @RestController
 @RequestMapping("/user")
 public class UserController {
