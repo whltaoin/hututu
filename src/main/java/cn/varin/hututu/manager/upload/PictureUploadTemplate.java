@@ -1,5 +1,6 @@
 package cn.varin.hututu.manager.upload;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.NumberUtil;
@@ -8,7 +9,9 @@ import cn.varin.hututu.config.COSClientConfig;
 import cn.varin.hututu.manager.CosManager;
 import cn.varin.hututu.model.dto.file.UploadPictureResult;
 import com.qcloud.cos.model.PutObjectResult;
+import com.qcloud.cos.model.ciModel.persistence.CIObject;
 import com.qcloud.cos.model.ciModel.persistence.ImageInfo;
+import com.qcloud.cos.model.ciModel.persistence.ProcessResults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,6 +19,8 @@ import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 文件上传的模版方式：分为了：使用文件上传和使用url上传
@@ -96,12 +101,18 @@ public abstract class PictureUploadTemplate {
             // 文章参考：https://cloud.tencent.com/document/product/436/55377#.E5.AF.B9.E4.BA.91.E4.B8.8A.E6.95.B0.E6.8D.AE.E8.BF.9B.E8.A1.8C.E5.9B.BE.E7.89.87.E5.A4.84.E7.90.86
             // 4. 存储图片信息
             ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
+            // 获取到处理的结果集
+            ProcessResults processResults = putObjectResult.getCiUploadResult().getProcessResults();
+            List<CIObject> objectList = processResults.getObjectList();
+            if (CollUtil.isNotEmpty(objectList)) {
+                // 转换格式后的结果
+                CIObject ciObject = objectList.get(0);
+                return buildResult(uploadPath,ciObject);
+            }
 
+            // 返回
+           return buildResult(uploadPath,tempFile,uploadPath,imageInfo);
 
-            UploadPictureResult result = buildResult(uploadPath,tempFile,uploadPath,imageInfo);
-
-            // 5. 返回
-            return result;
 
 
         } catch (Exception e) {
@@ -129,6 +140,14 @@ public abstract class PictureUploadTemplate {
         }
     }
 
+    /**
+     * 这是利用数据万象获取图片的基本信息，
+     * @param originFilename 图片名称
+     * @param file 临时文件
+     * @param uploadPath cos中的图片路径
+     * @param imageInfo 处理后的图片信息
+     * @return
+     */
     private UploadPictureResult buildResult(String originFilename, File file, String uploadPath, ImageInfo imageInfo) {
         UploadPictureResult uploadPictureResult = new UploadPictureResult();
         int picWidth = imageInfo.getWidth();
@@ -141,6 +160,29 @@ public abstract class PictureUploadTemplate {
         uploadPictureResult.setPicFormat(imageInfo.getFormat());
         uploadPictureResult.setPicSize(FileUtil.size(file));
         uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + uploadPath);
+        return uploadPictureResult;
+    }
+
+
+    /**
+     * 通过数据万象转换后格式的返回信息
+     * @param originFilename 图片名称
+     * @param ciObject 数据万象转换格式后的结果
+     * @return
+     */
+    private UploadPictureResult buildResult(String originFilename, CIObject ciObject ) {
+        UploadPictureResult uploadPictureResult = new UploadPictureResult();
+        int picWidth = ciObject.getWidth();
+        int picHeight = ciObject.getHeight();
+        double picScale = NumberUtil.round(picWidth * 1.0 / picHeight, 2).doubleValue();
+        uploadPictureResult.setPicName(FileUtil.mainName(originFilename));
+        uploadPictureResult.setPicWidth(picWidth);
+        uploadPictureResult.setPicHeight(picHeight);
+        uploadPictureResult.setPicScale(picScale);
+        uploadPictureResult.setPicFormat(ciObject.getFormat());
+        long l = ciObject.getSize().longValue();
+        uploadPictureResult.setPicSize(l);
+        uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + ciObject.getKey());
         return uploadPictureResult;
     }
 

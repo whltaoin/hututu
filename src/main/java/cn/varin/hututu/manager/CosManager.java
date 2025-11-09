@@ -1,6 +1,7 @@
 package cn.varin.hututu.manager;
 
 
+import cn.hutool.core.io.FileUtil;
 import cn.varin.hututu.config.COSClientConfig;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.exception.CosClientException;
@@ -15,6 +16,9 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 
 @Component
 public class CosManager {
@@ -40,6 +44,19 @@ public class CosManager {
         PicOperations picOperations = new PicOperations();
 
         picOperations.setIsPicInfo(1); // 1返回原图，0 不返回
+
+        // 参考链接：https://cloud.tencent.com/document/product/436/55377#.E4.B8.8A.E4.BC.A0.E6.97.B6.E5.9B.BE.E7.89.87.E6.8C.81.E4.B9.85.E5.8C.96.E5.A4.84.E7.90.86
+        //将原图转为webp格式（将图片转为webp格式，其实就是对图片进行压缩了。）
+        // 添加图片处理规则
+        List<PicOperations.Rule> ruleList = new LinkedList<>();
+        // 转换格式压缩规则
+        PicOperations.Rule rule1 = new PicOperations.Rule();
+        rule1.setBucket(cosClientConfig.getBucket());
+        rule1.setFileId(FileUtil.mainName(key)+".webp");// 测试图片名称
+        rule1.setRule("imageMogr2/format/webp");  // 规则
+        ruleList.add(rule1);
+        picOperations.setRules(ruleList);
+
         putObjectRequest.setPicOperations(picOperations);
         return   cosClient.putObject(putObjectRequest);
 
