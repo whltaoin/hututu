@@ -1,6 +1,7 @@
 package cn.varin.hututu.controller;
 
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONUtil;
 import cn.varin.hututu.annotation.AutoCheckRole;
 import cn.varin.hututu.common.BaseResponse;
@@ -19,13 +20,19 @@ import cn.varin.hututu.model.enums.UserRoleEnum;
 import cn.varin.hututu.model.vo.picture.PictureVo;
 import cn.varin.hututu.service.PictureService;
 import cn.varin.hututu.service.UserService;
+import cn.varin.hututu.util.EncryptionUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.github.benmanes.caffeine.cache.Cache;
 import com.squareup.okhttp.internal.framed.ErrorCode;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.BeanUtils;
+import org.springframework.cache.CacheManager;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,6 +41,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 // @Api(tags = "图片模块接口")
 @RestController
@@ -183,6 +191,99 @@ public class PictureController {
                 ,
                 pictureService.getQueryWrapper(pictureQueryRequest));
         Page<PictureVo> pictureVOPage = pictureService.getPictureVOPage(picturePage, request);
+        return ResponseUtil.success(pictureVOPage);
+
+    }
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+    @ApiOperation(value = "分页图片列表VO/cache")
+    @PostMapping("/list/page/vo/cache")
+    public BaseResponse<Page<PictureVo>> listPictureVOByPageWithCache(@RequestBody PictureQueryRequest pictureQueryRequest,HttpServletRequest request) {
+        int current = pictureQueryRequest.getCurrent();
+        int pageSize = pictureQueryRequest.getPageSize();
+        ThrowUtil.throwIf(pageSize > 20, ResponseCode.PARAMS_ERROR);
+
+        // 只有审核过的图片可以在主页显示
+        pictureQueryRequest.setReviewStatus(ReviewStatusEnum.PASS.getValue());
+        Page<Picture> picturePage = pictureService.page(new Page<>(current, pageSize)
+                ,
+                pictureService.getQueryWrapper(pictureQueryRequest));
+
+
+        // 添加到缓存中。构造key的格式为：hututu:listPictureVOByPageWithCache:${查询条件key}
+
+        String queryCondition = JSONUtil.toJsonStr(pictureQueryRequest);
+        // 查询条件加密
+        queryCondition = DigestUtils.md5DigestAsHex(queryCondition.getBytes());
+        String key  = String.format("hututu:listPictureVOByPageWithCache:%s", queryCondition);
+        ValueOperations<String, String> stringStringValueOperations = stringRedisTemplate.opsForValue();
+        String values = stringStringValueOperations.get(key);
+        if(values != null) {
+            Page<PictureVo> cachePage = JSONUtil.toBean(values, Page.class);
+            return ResponseUtil.success(cachePage);
+
+        }
+        
+
+        Page<PictureVo> pictureVOPage = pictureService.getPictureVOPage(picturePage, request);
+        // 缓存中没有数据，查询并存储到redis中
+        String jsonStr = JSONUtil.toJsonStr(pictureVOPage);
+
+        stringStringValueOperations.set(key, jsonStr,300+ RandomUtil.randomInt(0,300), TimeUnit.SECONDS);
+
+        return ResponseUtil.success(pictureVOPage);
+
+    }
+
+    /**
+     * 采用多级缓存，先查询本地缓存，如果本地缓存查询不到，在查询分布式缓存，如果再没有再从数据库中查询
+     * @param pictureQueryRequest
+     * @param request
+     * @return
+     */
+    @Resource
+    private ValueOperations<String, String> stringValueWithRedisTemplate;
+    @Resource
+    private Cache<String,String> localCacheWithCaffeine;
+
+    @ApiOperation(value = "分页图片列表VO多级缓存")
+    @PostMapping("/list/page/vo/multi-level")
+    public BaseResponse<Page<PictureVo>> listPictureVOByPageWithMultiLevel(@RequestBody PictureQueryRequest pictureQueryRequest,HttpServletRequest request) {
+        int current = pictureQueryRequest.getCurrent();
+        int pageSize = pictureQueryRequest.getPageSize();
+        ThrowUtil.throwIf(pageSize > 20, ResponseCode.PARAMS_ERROR);
+
+        // 只有审核过的图片可以在主页显示
+        pictureQueryRequest.setReviewStatus(ReviewStatusEnum.PASS.getValue());
+        Page<Picture> picturePage = pictureService.page(new Page<>(current, pageSize)
+                ,
+                pictureService.getQueryWrapper(pictureQueryRequest));
+        // 1. 构造key
+        String queryCondition = JSONUtil.toJsonStr(pictureQueryRequest);
+        // 查询条件加密
+        queryCondition = DigestUtils.md5DigestAsHex(queryCondition.getBytes());
+        String cacheKey  = String.format("hututu:listPictureVOByPageWithCache:%s", queryCondition);
+        // 2. 先查询本地缓存
+        String cacheValue = localCacheWithCaffeine.getIfPresent(cacheKey);
+        Page<PictureVo> pictureVOPage= null;
+        if(cacheValue != null) {
+            pictureVOPage=  JSONUtil.toBean(cacheValue,Page.class);
+            return ResponseUtil.success(pictureVOPage);
+        }
+        // 3 查询redis缓存
+        cacheValue = stringValueWithRedisTemplate.get(cacheKey);
+        if(cacheValue != null) {
+            pictureVOPage =  JSONUtil.toBean(cacheValue,Page.class);
+            return ResponseUtil.success(pictureVOPage);
+        }
+
+        // 3. 查询mysql
+
+        pictureVOPage = pictureService.getPictureVOPage(picturePage, request);
+        // 4 存储本地缓存和redis缓存
+        localCacheWithCaffeine.put(cacheKey, JSONUtil.toJsonStr(pictureVOPage));
+        stringValueWithRedisTemplate.set(cacheValue, JSONUtil.toJsonStr(pictureVOPage),300+ RandomUtil.randomInt(0,300), TimeUnit.SECONDS);
+
         return ResponseUtil.success(pictureVOPage);
 
     }

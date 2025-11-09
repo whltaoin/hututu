@@ -77,9 +77,12 @@ public abstract class PictureUploadTemplate {
 
         String uuid = RandomUtil.randomString(16);
         String originFilename = getFileName(fileResource);
+
         String uploadFilename = String.format("%s_%s.%s", DateUtil.formatDate(new Date()), uuid,
                 FileUtil.getSuffix(originFilename));
         String uploadPath = String.format("/%s/%s", uploadPicturePathPrefix, uploadFilename);
+        //todo 为什么这样就会产生一样的图片？？？？？
+        // String uploadPath = String.format("/%s/%s", uploadPicturePathPrefix, originFilename);
 
 
 

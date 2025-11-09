@@ -6,7 +6,7 @@ import { message } from 'ant-design-vue'
 
 
 const MyAxios = axios.create({
-  baseURL: 'http://localhost:9991/',
+  baseURL: 'http://localhost:9999/',
   timeout: 60000,
   withCredentials: true, //发送请去时，可以携带cookie
 });
