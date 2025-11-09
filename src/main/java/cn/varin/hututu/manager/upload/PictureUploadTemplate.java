@@ -107,11 +107,11 @@ public abstract class PictureUploadTemplate {
             if (CollUtil.isNotEmpty(objectList)) {
                 // 转换格式后的结果
                 CIObject ciObject = objectList.get(0);
-                return buildResult(uploadPath,ciObject);
+                return buildResult(originFilename,uploadPath,ciObject);
             }
 
             // 返回
-           return buildResult(uploadPath,tempFile,uploadPath,imageInfo);
+           return buildResult(originFilename,tempFile,uploadPath,imageInfo);
 
 
 
@@ -170,7 +170,7 @@ public abstract class PictureUploadTemplate {
      * @param ciObject 数据万象转换格式后的结果
      * @return
      */
-    private UploadPictureResult buildResult(String originFilename, CIObject ciObject ) {
+    private UploadPictureResult buildResult(String originFilename, String uploadPath,CIObject ciObject ) {
         UploadPictureResult uploadPictureResult = new UploadPictureResult();
         int picWidth = ciObject.getWidth();
         int picHeight = ciObject.getHeight();
@@ -183,6 +183,7 @@ public abstract class PictureUploadTemplate {
         long l = ciObject.getSize().longValue();
         uploadPictureResult.setPicSize(l);
         uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + ciObject.getKey());
+        uploadPictureResult.setOriginUrl(cosClientConfig.getHost() + "/" + uploadPath);
         return uploadPictureResult;
     }
 

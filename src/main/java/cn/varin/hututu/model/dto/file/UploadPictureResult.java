@@ -12,6 +12,7 @@ public class UploadPictureResult {
      * 图片 url
      */
     private String url;
+    private String originUrl;
 
     /**
      * 图片名称

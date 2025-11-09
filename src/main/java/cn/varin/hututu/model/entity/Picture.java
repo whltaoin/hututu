@@ -107,6 +107,11 @@ public class Picture  implements Serializable {
     private String reviewMessage;
 
     /**
+     * 原图在cos上的地址
+     */
+    private String originUrl;
+
+    /**
      * 审核人 ID
      */
     private Long reviewerId;
