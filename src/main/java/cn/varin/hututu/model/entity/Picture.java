@@ -110,6 +110,8 @@ public class Picture  implements Serializable {
      * 原图在cos上的地址
      */
     private String originUrl;
+    // 缩略图
+    private String thumbnailUrl;
 
     /**
      * 审核人 ID

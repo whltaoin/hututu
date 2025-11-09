@@ -45,7 +45,7 @@
           <!-- 单张图片 -->
           <a-card hoverable>
             <template #cover>
-              <img :alt="picture.name" :src="picture.url" @click="doClickPicture(picture)" />
+              <img :alt="picture.name" :src="picture.thumbnailUrl?? picture.url" @click="doClickPicture(picture)" />
             </template>
             <a-card-meta :title="picture.name">
               <template #description>
@@ -162,7 +162,7 @@ const doClickPicture = (picture: any) => {
   const userStore = useLoginUserStore()
   var loginUser = userStore.loginUser
   console.log(loginUser)
-  if(!loginUser.id){
+  if (!loginUser.id) {
     router.push('/user/login')
     return
   }

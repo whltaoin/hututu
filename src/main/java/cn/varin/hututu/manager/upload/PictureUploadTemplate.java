@@ -107,7 +107,15 @@ public abstract class PictureUploadTemplate {
             if (CollUtil.isNotEmpty(objectList)) {
                 // 转换格式后的结果
                 CIObject ciObject = objectList.get(0);
-                return buildResult(originFilename,uploadPath,ciObject);
+                CIObject thumbObject = objectList.get(0);
+                // 如果没有缩略图的话，webp代替
+                if (objectList.size()>1) {
+                    thumbObject = objectList.get(1);
+
+
+                }
+
+                return buildResult(originFilename,uploadPath,ciObject,thumbObject);
             }
 
             // 返回
@@ -170,20 +178,23 @@ public abstract class PictureUploadTemplate {
      * @param ciObject 数据万象转换格式后的结果
      * @return
      */
-    private UploadPictureResult buildResult(String originFilename, String uploadPath,CIObject ciObject ) {
+    private UploadPictureResult buildResult(String originFilename, String uploadPath,CIObject ...  ciObject ) {
         UploadPictureResult uploadPictureResult = new UploadPictureResult();
-        int picWidth = ciObject.getWidth();
-        int picHeight = ciObject.getHeight();
+        CIObject webpciObject = ciObject[0];
+        CIObject thumbciObject = ciObject[1];
+        int picWidth = webpciObject.getWidth();
+        int picHeight = webpciObject.getHeight();
         double picScale = NumberUtil.round(picWidth * 1.0 / picHeight, 2).doubleValue();
         uploadPictureResult.setPicName(FileUtil.mainName(originFilename));
         uploadPictureResult.setPicWidth(picWidth);
         uploadPictureResult.setPicHeight(picHeight);
         uploadPictureResult.setPicScale(picScale);
-        uploadPictureResult.setPicFormat(ciObject.getFormat());
-        long l = ciObject.getSize().longValue();
+        uploadPictureResult.setPicFormat(webpciObject.getFormat());
+        long l = webpciObject.getSize().longValue();
         uploadPictureResult.setPicSize(l);
-        uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + ciObject.getKey());
+        uploadPictureResult.setUrl(cosClientConfig.getHost() + "/" + webpciObject.getKey());
         uploadPictureResult.setOriginUrl(cosClientConfig.getHost() + "/" + uploadPath);
+        uploadPictureResult.setThumbnailUrl(cosClientConfig.getHost() + "/" + thumbciObject.getKey());
         return uploadPictureResult;
     }
 

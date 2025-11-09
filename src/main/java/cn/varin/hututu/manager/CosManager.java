@@ -55,6 +55,16 @@ public class CosManager {
         rule1.setFileId(FileUtil.mainName(key)+".webp");// 测试图片名称
         rule1.setRule("imageMogr2/format/webp");  // 规则
         ruleList.add(rule1);
+
+        // 缩略图规则
+        if(file.length()>2*1024){
+            PicOperations.Rule rule2 = new PicOperations.Rule();
+            rule2.setBucket(cosClientConfig.getBucket()); // 存储桶
+            rule2.setFileId(FileUtil.mainName(key)+"_thumbnail."+FileUtil.getSuffix(key));// 图片名称
+            rule2.setRule(String.format("imageMogr2/thumbnail/%sx%s>",200,200));  // 规则
+            ruleList.add(rule2);
+        }
+
         picOperations.setRules(ruleList);
 
         putObjectRequest.setPicOperations(picOperations);

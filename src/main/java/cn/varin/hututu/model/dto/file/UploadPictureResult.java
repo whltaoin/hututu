@@ -19,6 +19,9 @@ public class UploadPictureResult {
      */
     private String picName;
 
+    // 缩略图
+    private String thumbnailUrl;
+
 
 
 

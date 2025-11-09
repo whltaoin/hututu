@@ -56,3 +56,11 @@ ALTER TABLE picture
 
 
 CREATE INDEX idx_reviewStatus ON picture (reviewStatus);
+
+
+# 增加缩率图和原图片字段
+
+ALTER TABLE picture
+
+    ADD COLUMN originUrl varchar(512) NULL COMMENT '原url',
+    ADD COLUMN thumbnailUrl varchar(512) NULL COMMENT '缩略图 url';
