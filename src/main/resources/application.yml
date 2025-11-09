@@ -2,6 +2,8 @@ server:
   port: 9999
   servlet:
     context-path: /api
+    session:
+      timeout: 2592000 # 30天
 spring:
   application:
     name: hututu-intelligentImageBed
@@ -11,6 +13,10 @@ spring:
     multipart:
       location: /users/varya/nacos
       max-file-size: 10MB # 默认上传大小为1MB
+  session:
+    store-type: redis # session 存储类型
+
+
 
 
 knife4j:
