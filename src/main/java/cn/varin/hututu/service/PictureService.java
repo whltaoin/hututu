@@ -84,7 +84,19 @@ public interface PictureService extends IService<Picture> {
 
     Integer pictureUploadByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest,User loginUser);
 
+    /**
+     * 权限验证
+     * @param loginUser
+     * @param picture
+     */
+    void checkPictureAuth(User loginUser, Picture picture);
 
+    /**
+     * 删除图片
+     * @param pictureId
+     * @param loginUser
+     */
+    void deletePicture(long pictureId, User loginUser);
 
 }
 

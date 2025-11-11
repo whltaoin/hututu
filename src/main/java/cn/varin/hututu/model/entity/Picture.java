@@ -20,6 +20,10 @@ public class Picture  implements Serializable {
      */
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
+    /**
+     * 图片所属空间ID，为null，则为公共图库
+     */
+    private Long spaceId;
 
     /**
      * 图片 url

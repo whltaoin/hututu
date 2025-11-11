@@ -15,7 +15,7 @@ public class PictureQueryRequest extends PageRequest implements Serializable {
     private Long id;  
   
       
-    private String name;  
+    private String name;
   
       
     private String introduction;  
@@ -54,6 +54,11 @@ public class PictureQueryRequest extends PageRequest implements Serializable {
 
 
     private Long reviewerId;
+
+    private Long spaceId;
+
+
+    private boolean nullSpaceId;
 
 
     private static final long serialVersionUID = 1L;  

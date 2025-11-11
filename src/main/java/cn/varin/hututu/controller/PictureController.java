@@ -14,11 +14,13 @@ import cn.varin.hututu.exception.ResponseCode;
 import cn.varin.hututu.exception.ThrowUtil;
 import cn.varin.hututu.model.dto.picture.*;
 import cn.varin.hututu.model.entity.Picture;
+import cn.varin.hututu.model.entity.Space;
 import cn.varin.hututu.model.entity.User;
 import cn.varin.hututu.model.enums.ReviewStatusEnum;
 import cn.varin.hututu.model.enums.UserRoleEnum;
 import cn.varin.hututu.model.vo.picture.PictureVo;
 import cn.varin.hututu.service.PictureService;
+import cn.varin.hututu.service.SpaceService;
 import cn.varin.hututu.service.UserService;
 import cn.varin.hututu.util.EncryptionUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -93,16 +95,12 @@ public class PictureController {
     @ApiOperation(value ="删除图片")
     @DeleteMapping("/delete")
     public BaseResponse<Boolean> delete(@RequestBody DeleteRequest deleteRequest, HttpServletRequest httpServletRequest) {
-        ThrowUtil.throwIf(ObjectUtil.isEmpty(deleteRequest)|| deleteRequest.getId()<=0, ResponseCode.PARAMS_ERROR);
         User loginUser = userService.getLoginUser(httpServletRequest);
-        ThrowUtil.throwIf(ObjectUtil.isEmpty(loginUser), ResponseCode.NOT_LOGIN_ERROR);
-
         Picture oldPicture = pictureService.getById(deleteRequest.getId());
-        ThrowUtil.throwIf(ObjectUtil.isEmpty(oldPicture), ResponseCode.NOT_FOUND_ERROR);
-
-        ThrowUtil.throwIf(!oldPicture.getUserId().equals(loginUser.getId()) || !  userService.isAdmin(loginUser), ResponseCode.NO_AUTH_ERROR);
-
+        pictureService.deletePicture(oldPicture.getIsDelete(), loginUser);
         boolean deleteStatus = pictureService.removeById(oldPicture.getId());
+
+
 
         ThrowUtil.throwIf(
               !  deleteStatus
@@ -149,6 +147,12 @@ public class PictureController {
 
         Picture picture = pictureService.getById(id);
         ThrowUtil.throwIf(picture == null, ResponseCode.NOT_FOUND_ERROR);
+        Long spaceId = picture.getSpaceId();
+        if (spaceId != null) {
+            User loginUser = userService.getLoginUser(request);
+            pictureService.checkPictureAuth(loginUser, picture);
+        }
+
 
         return ResponseUtil.success(picture);
     }
@@ -171,22 +175,37 @@ public class PictureController {
     public BaseResponse<Page<Picture>> listPictureByPage(@RequestBody PictureQueryRequest pictureQueryRequest) {
         int current = pictureQueryRequest.getCurrent();
         int pageSize = pictureQueryRequest.getPageSize();
+
         Page<Picture> picturePage = pictureService.page(new Page<>(current, pageSize)
                 ,
                 pictureService.getQueryWrapper(pictureQueryRequest));
     return ResponseUtil.success(picturePage);
 
     }
-
+    @Resource
+    private SpaceService spaceService;
     @ApiOperation(value = "分页图片列表VO")
     @PostMapping("/list/page/vo")
     public BaseResponse<Page<PictureVo>> listPictureVOByPage(@RequestBody PictureQueryRequest pictureQueryRequest,HttpServletRequest request) {
         int current = pictureQueryRequest.getCurrent();
         int pageSize = pictureQueryRequest.getPageSize();
         ThrowUtil.throwIf(pageSize > 20, ResponseCode.PARAMS_ERROR);
+        Long spaceId = pictureQueryRequest.getSpaceId();
+        if(spaceId == null) {
+            pictureQueryRequest.setReviewStatus(ReviewStatusEnum.PASS.getValue());
 
+            pictureQueryRequest.setNullSpaceId(true);
+
+        }else{
+            User loginUser = userService.getLoginUser(request);
+            Space space = spaceService.getById(spaceId);
+            ThrowUtil.throwIf(space == null, ResponseCode.NOT_FOUND_ERROR.getCode(), "空间不存在");
+            if (!loginUser.getId().equals(space.getUserId())) {
+                throw new CustomizeException(ResponseCode.NO_AUTH_ERROR, "没有空间权限");
+            }
+        }
         // 只有审核过的图片可以在主页显示
-        pictureQueryRequest.setReviewStatus(ReviewStatusEnum.PASS.getValue());
+
         Page<Picture> picturePage = pictureService.page(new Page<>(current, pageSize)
                 ,
                 pictureService.getQueryWrapper(pictureQueryRequest));
@@ -317,7 +336,7 @@ public class PictureController {
         ThrowUtil.throwIf(oldPicture == null, ResponseCode.NOT_FOUND_ERROR);
 
         ThrowUtil.throwIf(!oldPicture.getUserId().equals(loginUser.getId()) || !  userService.isAdmin(loginUser), ResponseCode.NO_AUTH_ERROR);
-
+        pictureService.checkPictureAuth(loginUser, oldPicture);
         // 管理员自动审核
         pictureService.fillterReviewPictureParams(oldPicture, loginUser);
 

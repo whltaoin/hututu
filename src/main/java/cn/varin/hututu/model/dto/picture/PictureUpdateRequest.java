@@ -12,8 +12,8 @@ import java.util.List;
 public class PictureUpdateRequest implements Serializable {
   
       
-    private Long id;  
-  
+    private Long id;
+
       
     private String name;  
   
